@@ -1,13 +1,15 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <cctype>
+//#include <cctype>
 #include <string>
-
+#include <sstream>
+#include <map>
+#include <map>
 
 using namespace std;
 
-string converter(string str, vector<vector<string>> &table)
+string converter(string str, vector<vector<string>> &table, map<string, int> &rows, map<string, int> &lines)
 {
     string row1, row2, line1, line2;
     char op;
@@ -29,116 +31,106 @@ string converter(string str, vector<vector<string>> &table)
         row2 += str[i];
         i++;
     }
-    while(i != str.length())
-    {
+    while(i != str.length()) {
         line2 += str[i];
         i++;
     }
 
-
-    int posr1 = 0;
-    int posl1 = 0;
-    while(table[0][posr1] != row1)
-    {
-        posr1++;
-        if(posr1 == table[0].size())
-            break;
-    }
-    while(table[posl1][0] != line1)
-    {
-        posl1++;
-        if(posl1 == table.size())
-            break;
-    }
-
-    int posr2 = 1;
-    int posl2 = 1;
-    while(table[0][posr2] != row2)
-    {
-        posr2++;
-        if(posr2 == table[0].size())
-            break;
-    }
-    while(table[posl2][0] != line2)
-    {
-        posl2++;
-        if(posl2 == table.size())
-            break;
-    }
-
-    if(posl1 >= table.size() || posr1 >= table[0].size() || posl2 >= table.size() || posr2 >= table[0].size())
+//    if(!isdigit(table[lines[line1]][rows[row1]][0]))
+//    {
+//        converter()
+//    }
+    if(rows.find(row1) == rows.end() || lines.find(line1) == lines.end() || rows.find(row2) == rows.end() || lines.find(line2) == lines.end())
         return "WRONG FORMULA";
     else
         switch ((int) op)
         {
             case (int) '+':
-                return to_string(stoi(table[posl1][posr1]) + stoi(table[posl2][posr2]));
+                return to_string(stoi(table[lines[line1]][rows[row1]]) + stoi(table[lines[line2]][rows[row2]]));
             case (int) '-':
-                return to_string(stoi(table[posl1][posr1]) - stoi(table[posl2][posr2]));
+                return to_string(stoi(table[lines[line1]][rows[row1]]) - stoi(table[lines[line2]][rows[row2]]));
             case (int) '*':
-                return to_string(stoi(table[posl1][posr1]) * stoi(table[posl2][posr2]));
+                return to_string(stoi(table[lines[line1]][rows[row1]]) * stoi(table[lines[line2]][rows[row2]]));
             case (int) '/':
                 try {
-                    if (table[posl2][posr2] == "0") throw exception();
-                    return to_string(stoi(table[posl1][posr1]) / stoi(table[posl2][posr2]));
-                }
-                catch(exception&e) {
+                    if (table[lines[line2]][rows[row2]] == "0") throw exception();
+                    return to_string(stoi(table[lines[line1]][rows[row1]]) / stoi(table[lines[line2]][rows[row2]]));
+                }catch(exception&e)
+                {
                     return "DEVIDE BY ZERO" ;
                 }
-
             default:
                 return "WRONG OPERATION";
         }
-
 }
-int main(int argc, char *argv[])
+
+void printCSV(vector<vector<string>> &table, map<string, int> &rows, map<string, int> &lines)
 {
-    ifstream inFile;
-    inFile.open(argv[1]);
+    for(auto x : rows) cout<<","<<x.first;
+    cout<<endl;
 
-    vector<vector<string>> table;
-    table.emplace_back();
-
-    int x = 0;
-    char ch = '\n';
-    string str = "";
-    for (char write2line; inFile.get(write2line);) {
-
-        if (write2line == ch) {
-            table[x].push_back(str);
-            str = "";
-            table.emplace_back();
-            x++;
-        } else if (write2line == ',') {
-            table[x].push_back(str);
-            str = "";
-        } else {
-            str += write2line;
-        }
-    }
-    table.pop_back();
-
-
-    for(int i = 1; i < table.size(); i++)
+    for(auto x : lines)
     {
-        for(int j = 1; j < table[i].size(); j++)
+        cout<<x.first;
+        for(auto y : table[x.second]) cout<<","<<y;
+        cout<<endl;
+    }
+}
+
+vector<vector<string>> table;
+map<string, int> rows{};
+map<string, int> lines{};
+
+//int main(int argc, char *argv[])
+int main()
+{
+    ifstream file("1.csv");
+    string str;
+    getline(file, str);
+    stringstream strStream(str);
+
+    string segment;
+    vector<string> seglist;
+    int what_row = -1;
+
+
+    while(getline(strStream, segment, ','))
+    {
+        seglist.push_back(segment);
+        rows[segment] = what_row;
+        what_row++;
+    }
+    rows.erase(rows.begin());
+
+    int what_line = 0;
+    seglist.clear();
+    while(getline(file, str))
+    {
+        strStream = stringstream(str);
+        while(getline(strStream, segment, ','))
+        {
+            seglist.push_back(segment);
+        }
+        lines[seglist[0]] = what_line;
+        seglist.erase(seglist.begin());
+        table.push_back(seglist);
+        seglist.clear();
+        what_line++;
+    }
+
+
+    for(int i = 0; i < table.size(); i++)
+    {
+        for(int j = 0; j < table[i].size(); j++)
         {
             if(!isdigit(table[i][j][0]))
             {
-                table[i][j] = converter(table[i][j], table);
+                table[i][j] = converter(table[i][j], table, rows, lines);
             }
         }
     }
 
-    for(int i = 0; i < table.size(); i++)
-    {
-        for(int j = 0; j < table[i].size() - 1; j++)
-        {
-            cout<<table[i][j]<<",";
-        }
-        cout<<table[i][table[i].size() - 1]<<endl;
-    }
-
+    printCSV(table, rows, lines);
     system("Pause");
     return 0;
 }
