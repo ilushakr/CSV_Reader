@@ -1,70 +1,108 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-//#include <cctype>
 #include <string>
-#include <sstream>
 #include <map>
-#include <map>
+#include <regex>
 
 using namespace std;
 
-string converter(string str, vector<vector<string>> &table, map<string, int> &rows, map<string, int> &lines)
+vector<vector<string>> table;
+map<string, int> rows{};
+map<string, int> lines{};
+
+int iterations = 0;
+
+void converter(string str, int positionLine, int positionRow)
 {
-    string row1, row2, line1, line2;
-    char op;
-    int i = 1;
-    while(!isdigit(str[i]))
+    iterations++;
+    if (iterations >= rows.size() * lines.size() || str == "loop")
     {
-        row1 += str[i];
-        i++;
-    }
-    while(isdigit(str[i]))
-    {
-        line1 += str[i];
-        i++;
-    }
-    op = str[i];
-    i++;
-    while(!isdigit(str[i]))
-    {
-        row2 += str[i];
-        i++;
-    }
-    while(i != str.length()) {
-        line2 += str[i];
-        i++;
+        table[positionLine][positionRow] = "loop";
+        return;
+//        cout<<"err";
+//        exit(3);
     }
 
-//    if(!isdigit(table[lines[line1]][rows[row1]][0]))
-//    {
-//        converter()
-//    }
-    if(rows.find(row1) == rows.end() || lines.find(line1) == lines.end() || rows.find(row2) == rows.end() || lines.find(line2) == lines.end())
-        return "WRONG FORMULA";
-    else
-        switch ((int) op)
-        {
+    if(!regex_match(str.begin(), str.end(), regex("=[a-zA-Z]+\\d+[+\\-*\\/][a-zA-Z]+\\d+")))
+    {
+        table[positionLine][positionRow] = "WRONG FORMULA";
+        return;
+    }
+    string row1, row2, line1, line2;
+    string op;
+    smatch m;
+    regex_search (str,m,regex("[a-zA-Z]+"));
+    row1 = m[0];
+    str = m.suffix().str();
+
+    regex_search (str,m,regex("\\d+"));
+    line1 = m[0];
+    str = m.suffix().str();
+
+    regex_search (str,m,regex("[\\+\\-\\*\\/]"));
+    op = m[0];
+    str = m.suffix().str();
+
+    regex_search (str,m,regex("[a-zA-Z]+"));
+    row2 = m[0];
+    str = m.suffix().str();
+
+    regex_search (str,m,regex("\\d+"));
+    line2 = m[0];
+    str = m.suffix().str();
+
+    if (rows.find(row1) == rows.end() || lines.find(line1) == lines.end() || rows.find(row2) == rows.end() ||
+        lines.find(line2) == lines.end())
+        table[positionLine][positionRow] = "WRONG FORMULA";
+    else {
+        if (!isdigit(table[lines[line1]][rows[row1]][0])) {
+            converter(table[lines[line1]][rows[row1]], lines[line1], rows[row1]);
+            if(table[lines[line1]][rows[row1]] == "loop")
+            {
+                table[positionLine][positionRow] = "loop";
+                return;;
+            }
+        } else if (!isdigit(table[lines[line2]][rows[row2]][0])) {
+            converter(table[lines[line2]][rows[row2]], lines[line2], rows[row2]);
+            if(table[lines[line2]][rows[row2]] == "loop")
+            {
+                table[positionLine][positionRow] = "loop";
+                return;;
+            }
+        }
+
+        switch ((int) op[0]) {
             case (int) '+':
-                return to_string(stoi(table[lines[line1]][rows[row1]]) + stoi(table[lines[line2]][rows[row2]]));
+                table[positionLine][positionRow] = to_string(
+                        stoi(table[lines[line1]][rows[row1]]) + stoi(table[lines[line2]][rows[row2]]));
+                break;
             case (int) '-':
-                return to_string(stoi(table[lines[line1]][rows[row1]]) - stoi(table[lines[line2]][rows[row2]]));
+                table[positionLine][positionRow] = to_string(
+                        stoi(table[lines[line1]][rows[row1]]) - stoi(table[lines[line2]][rows[row2]]));
+                break;
             case (int) '*':
-                return to_string(stoi(table[lines[line1]][rows[row1]]) * stoi(table[lines[line2]][rows[row2]]));
+                table[positionLine][positionRow] = to_string(
+                        stoi(table[lines[line1]][rows[row1]]) * stoi(table[lines[line2]][rows[row2]]));
+                break;
             case (int) '/':
                 try {
                     if (table[lines[line2]][rows[row2]] == "0") throw exception();
-                    return to_string(stoi(table[lines[line1]][rows[row1]]) / stoi(table[lines[line2]][rows[row2]]));
-                }catch(exception&e)
-                {
-                    return "DEVIDE BY ZERO" ;
+                    table[positionLine][positionRow] = to_string(
+                            stoi(table[lines[line1]][rows[row1]]) / stoi(table[lines[line2]][rows[row2]]));
+                } catch (exception &e) {
+                    table[positionLine][positionRow] = "DEVIDE BY ZERO";
                 }
+                break;
             default:
-                return "WRONG OPERATION";
+                table[positionLine][positionRow] = "WRONG OPERATION";
+                break;
         }
+    }
+
 }
 
-void printCSV(vector<vector<string>> &table, map<string, int> &rows, map<string, int> &lines)
+void printCSV()
 {
     for(auto x : rows) cout<<","<<x.first;
     cout<<endl;
@@ -77,14 +115,12 @@ void printCSV(vector<vector<string>> &table, map<string, int> &rows, map<string,
     }
 }
 
-vector<vector<string>> table;
-map<string, int> rows{};
-map<string, int> lines{};
+
 
 //int main(int argc, char *argv[])
 int main()
 {
-    ifstream file("1.csv");
+    ifstream file("recursion.csv");
     string str;
     getline(file, str);
     stringstream strStream(str);
@@ -125,12 +161,13 @@ int main()
         {
             if(!isdigit(table[i][j][0]))
             {
-                table[i][j] = converter(table[i][j], table, rows, lines);
+                converter(table[i][j], i, j);
+                iterations = 0;
             }
         }
     }
 
-    printCSV(table, rows, lines);
+    printCSV();
     system("Pause");
     return 0;
 }
