@@ -20,8 +20,6 @@ void converter(string str, int positionLine, int positionRow)
     {
         table[positionLine][positionRow] = "loop";
         return;
-//        cout<<"err";
-//        exit(3);
     }
 
     if(!regex_match(str.begin(), str.end(), regex("=[a-zA-Z]+\\d+[+\\-*\\/][a-zA-Z]+\\d+")))
@@ -117,10 +115,9 @@ void printCSV()
 
 
 
-//int main(int argc, char *argv[])
-int main()
+int main(int argc, char *argv[])
 {
-    ifstream file("recursion.csv");
+    ifstream file(argv[1]);
     string str;
     getline(file, str);
     stringstream strStream(str);
