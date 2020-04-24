@@ -15,6 +15,10 @@ int iterations = 0;
 
 void converter(string str, int positionLine, int positionRow)
 {
+    /*
+     *stops recursion when iteration reaches number of elements or this element already in infinity chain(check with value of element = "loop"
+     *assign to this element value "loop"
+     */
     iterations++;
     if (iterations >= rows.size() * lines.size() || str == "loop")
     {
@@ -27,6 +31,10 @@ void converter(string str, int positionLine, int positionRow)
         table[positionLine][positionRow] = "WRONG FORMULA";
         return;
     }
+
+    /*
+     *parse of formula
+     */
     string row1, row2, line1, line2;
     string op;
     smatch m;
@@ -50,10 +58,17 @@ void converter(string str, int positionLine, int positionRow)
     line2 = m[0];
     str = m.suffix().str();
 
+    /*
+     * check if row or line name doesnt exist
+     */
     if (rows.find(row1) == rows.end() || lines.find(line1) == lines.end() || rows.find(row2) == rows.end() ||
         lines.find(line2) == lines.end())
         table[positionLine][positionRow] = "WRONG FORMULA";
     else {
+        /*
+         * check if corresponding elements are not formula
+         * if yes - making a recursive assigments
+         */
         if (!isdigit(table[lines[line1]][rows[row1]][0])) {
             converter(table[lines[line1]][rows[row1]], lines[line1], rows[row1]);
             if(table[lines[line1]][rows[row1]] == "loop")
@@ -124,9 +139,11 @@ int main(int argc, char *argv[])
 
     string segment;
     vector<string> seglist;
+
+    /*
+     * get first line of csv file and create pairs like "name of raw" - "index"
+     */
     int what_row = -1;
-
-
     while(getline(strStream, segment, ','))
     {
         seglist.push_back(segment);
@@ -135,6 +152,11 @@ int main(int argc, char *argv[])
     }
     rows.erase(rows.begin());
 
+    /*
+     * get rest of lines
+     * make pairs of first line element like "number of line" - "index"
+     * filling the table with elements
+     */
     int what_line = 0;
     seglist.clear();
     while(getline(file, str))
